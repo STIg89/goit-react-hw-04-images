@@ -16,11 +16,11 @@ const getImages = async (value, page, per_page) => {
     },
   };
   const response = await axios.get(`${BASE_URL}`, options);
+  const { hits, totalHits } = response.data;
   if (response.status !== 200) {
-    console.log('fetch error');
     return;
   }
-  return await response.data;
+  return { hits, totalHits };
 };
 
 export default getImages;

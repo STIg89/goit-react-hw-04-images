@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Wrapper } from './ImageFinder.styled';
 import { Button } from 'components/Button/Button';
 import { ImageGallery } from 'components/ImageGallery/ImageGallery';
@@ -7,69 +7,65 @@ import { SearchBar } from 'components/SearchBar/SearchBar';
 import { Notify } from 'notiflix';
 import getImages from 'api/api';
 
-export class ImageFinder extends Component {
-  state = {
-    searchValue: '',
-    page: 1,
-    images: [],
-    status: 'idle',
-    error: null,
-    totalPages: 0,
-    per_page: 12,
-  };
+export const ImageFinder = () => {
+  const [searchValue, setSearchValue] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [totalPages, setTotalPages] = useState(0);
+  const per_page = useRef(12);
 
-  async componentDidUpdate(_, prevState) {
-    const { searchValue, page, totalPages, per_page } = this.state;
-    if (prevState.searchValue !== searchValue || prevState.page !== page) {
-      try {
-        this.setState({ status: 'pending' });
-        const data = await getImages(searchValue, page, per_page);
-        this.setState(({ images }) => ({
-          images: [...images, ...data.hits],
-          status: 'resolved',
-          totalPages: Math.ceil(data.totalHits / per_page),
-        }));
-      } catch (error) {
-        Notify.failure('Sorry, try again');
-        this.setState({
-          status: 'rejected',
-        });
-      }
-      if (totalPages === page) {
-        Notify.info(`We're sorry, but you've reached the end of search`);
-        this.setState({
-          status: 'idle',
-        });
-      }
+  useEffect(() => {
+    if (!searchValue) {
+      return;
     }
-  }
+    setStatus('pending');
+    try {
+      getImages(searchValue, page, per_page.current).then(
+        ({ hits, totalHits }) => {
+          setImages(images => [...images, ...hits]);
+          const pageCount = Math.ceil(totalHits / per_page.current);
+          setTotalPages(pageCount);
+          setStatus('resolved');
 
-  onSearchClick = value => {
+          if (page === 1) {
+            Notify.info(`We found ${totalHits} images`);
+          }
+
+          if (page === pageCount && page > 1) {
+            Notify.info(`We're sorry, but you've reached the end of search`);
+            setStatus('idle');
+          }
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      Notify.failure('Sorry, try again');
+      setStatus('rejected');
+    }
+  }, [searchValue, page]);
+
+  const onSearchClick = value => {
     if (value === '') {
       Notify.info('Please, write a request');
       return;
     }
-    if (value !== this.state.searchValue) {
-      this.setState({ searchValue: value, images: [], page: 1 });
+    if (value !== searchValue) {
+      setSearchValue(value);
+      setImages([]);
+      setPage(1);
     }
   };
 
-  onLoadMoreClick = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
-
-  render() {
-    const { images, status, totalPages } = this.state;
-
-    return (
-      <Wrapper>
-        <SearchBar onSubmitForm={this.onSearchClick} />
-        <ImageGallery images={images} />
-        {status === 'resolved' && totalPages > 1 && (
-          <Button onClick={this.onLoadMoreClick} />
-        )}
-        {status === 'pending' && <Loader />}
-      </Wrapper>
-    );
-  }
-}
+  const onLoadMoreClick = () => setPage(page => page + 1);
+  return (
+    <Wrapper>
+      <SearchBar onSubmitForm={onSearchClick} />
+      <ImageGallery images={images} />
+      {status === 'resolved' && totalPages > 1 && (
+        <Button onClick={onLoadMoreClick} />
+      )}
+      {status === 'pending' && <Loader />}
+    </Wrapper>
+  );
+};

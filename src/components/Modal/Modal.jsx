@@ -1,37 +1,33 @@
-import React, { Component } from 'react';
+import { useEffect } from 'react';
 import { Backdrop, ModalWrap } from './Modal.styled';
 import PropTypes from 'prop-types';
 
-export class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.props.onClose);
-  }
+export const Modal = ({ image, tags, onClose }) => {
+  useEffect(() => {
+    window.addEventListener('keydown', onClose);
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.props.onClose);
-  }
+    return () => {
+      window.removeEventListener('keydown', onClose);
+    };
+  }, [onClose]);
 
-  onCloseModal = e => {
+  const onCloseModal = e => {
     const clickedTo = e.target.id;
     const pressedKey = e.code;
 
     if (clickedTo === 'backdrop' || pressedKey === 'Escape') {
-      this.props.onClose();
+      onClose();
     }
   };
 
-  render() {
-    const { image, tags, onClose } = this.props;
-
-    return (
-      <Backdrop id="backdrop" onClick={this.onCloseModal}>
-        <ModalWrap onClose={onClose}>
-          <img src={image} alt={tags} />
-        </ModalWrap>
-      </Backdrop>
-    );
-  }
-}
+  return (
+    <Backdrop id="backdrop" onClick={onCloseModal}>
+      <ModalWrap onClose={onClose}>
+        <img src={image} alt={tags} />
+      </ModalWrap>
+    </Backdrop>
+  );
+};
 
 Modal.propTypes = {
   image: PropTypes.string.isRequired,
