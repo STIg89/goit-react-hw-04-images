@@ -4,25 +4,25 @@ import PropTypes from 'prop-types';
 
 export const Modal = ({ image, tags, onClose }) => {
   useEffect(() => {
-    window.addEventListener('keydown', onClose);
+    const onCloseByEsc = e => {
+      const pressedKey = e.code;
+      if (pressedKey === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onCloseByEsc);
 
     return () => {
-      window.removeEventListener('keydown', onClose);
+      window.removeEventListener('keydown', onCloseByEsc);
     };
   }, [onClose]);
 
-  const onCloseModal = e => {
+  const onCloseByClick = e => {
     const clickedTo = e.target.id;
-    const pressedKey = e.code;
-
-    if (clickedTo === 'backdrop' || pressedKey === 'Escape') {
-      onClose();
-    }
+    if (clickedTo === 'backdrop') onClose();
   };
 
   return (
-    <Backdrop id="backdrop" onClick={onCloseModal}>
-      <ModalWrap onClose={onClose}>
+    <Backdrop id="backdrop" onClick={onCloseByClick}>
+      <ModalWrap>
         <img src={image} alt={tags} />
       </ModalWrap>
     </Backdrop>
